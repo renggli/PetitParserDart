@@ -7,16 +7,31 @@ class DartGrammar extends CompositeParser {
 
   void initialize() {
     def('start', ref('unit').end());
-
+    
+    whitespaces();
     variables();
     functions();
     parameters();
     classes();
+    operators();
+    getters();
+    setters();
+    constructors();
   }
 
   /** Returns a dart token. */
   Parser tok(String value) {
-    return string(value).token().trim(ref('trimmer'));
+    return string(value).token().trim(ref('whitespace'));
+  }
+  
+  void whitespaces() {
+    def('newline', Token.newlineParser());
+    def('whitespace', whitespace()
+      .or(string('/*')
+        .seq(string('*/').neg().star())
+        .seq(string('*/')))
+      .or(string('//')
+        .seq(ref('newline').neg().star())));
   }
 
   /** Variables: http://www.dartlang.org/docs/spec/latest/dart-language-specification.html#h.55kzc4r0q21p */
@@ -128,6 +143,112 @@ class DartGrammar extends CompositeParser {
         .seq(ref('initializedIdentifierList'))));
     def('staticFinalDeclarationList', ref('staticFinalDeclaration').separatedBy(tok(",")));
     def('staticFinalDeclaration', ref('identifier').seq(tok("=")).seq(ref('expression')));
+  }
+  
+  /** Operators: http://www.dartlang.org/docs/spec/latest/dart-language-specification.html#h.8z01vn73qf90 */
+  void operators() {
+    def('operatorSignature', ref('returnType').optional()
+      .seq(tok("operator"))
+      .seq(ref('operator'))
+      .seq(ref('formalParameterList')));
+    def('operator', ref('unaryOperator')
+      .or(ref('binaryOperator'))
+      .or(tok("[")
+        .seq(tok("]"))
+        .seq(tok("=")))
+      .or(tok("[")
+        .seq(tok("]")))
+      .or(tok("negate"))
+      .or(tok("equals")));
+    def('unaryOperator', ref('negateOperator'));
+    def('binaryOperator', ref('multiplicativeOperator')
+      .or(ref('multiplicativeOperator'))
+      .or(ref('additiveOperator'))
+      .or(ref('shiftOperator'))
+      .or(ref('relationalOperator'))
+      .or(ref('equalityOperator'))
+      .or(ref('bitwiseOperator')));
+    def('prefixOperator', tok("-")
+      .or(ref('negateOperator')));
+    def('negateOperator', tok("!")
+      .or(tok("~")));
+  }
+  
+  /** Getters: http://www.dartlang.org/docs/spec/latest/dart-language-specification.html#h.semn73yhmkb5 */
+  void getters() {
+    def('getterSignature', tok("static").optional()
+      .seq(ref('returnType').optional())
+      .seq(tok("get"))
+      .seq(ref('identifier'))
+      .seq(ref('formalParameterList')));
+  }
+  
+  /** Setters: http://www.dartlang.org/docs/spec/latest/dart-language-specification.html#h.xn3nrcf01kbi */
+  void setters() {
+    def('setterSignature', tok("static").optional()
+        .seq(ref('returnType').optional())
+        .seq(tok("set"))
+        .seq(ref('identifier'))
+        .seq(ref('formalParameterList')));
+  }
+  
+  /** Constructors: */
+  void constructors() {
+    constructorSignature:
+      identifier formalParameterList
+    | namedConstructorSignature
+    ;
+ namedConstructorSignature:
+      identifier '.' identifier formalParameterList
+    ;
+  redirection:
+    ':' this ('.' identifier)? arguments
+   ;
+  initializers:
+    ':' superCallOrFieldInitializer (',' superCallOrFieldInitializer)*
+  ;
+superCallOrFieldInitializer:
+    super arguments
+  | super '.' identifier arguments
+  | fieldInitializer
+  ;
+fieldInitializer:
+      (this '.')? identifier '=' conditionalExpression
+  ;
+  factoryConstructorSignature:
+    factory qualified  ('.' identifier)? formalParameterList
+  ;
+  constantConstructorSignature:
+    const qualified formalParameterList
+  ;
+  }
+  
+  /** Superclasses: */
+  void superclasses() {
+    superclass:
+      extends type
+    ;
+  interfaces:
+    implements typeList
+  ;
+  }
+  
+  /** : */
+  void interfaces() {
+    interfaceDefinition:
+      interface identifier typeParameters? superinterfaces?
+      factorySpecification? '{' (interfaceMemberDefinition)* '}'
+    ;
+ interfaceMemberDefinition:
+      static final type? initializedIdentifierList ';'
+    | functionSignature ';'
+    | constantConstructorSignature ';'
+    | namedConstructorSignature ';'
+    | getterSignature ';'
+     | setterSignature ';'
+    | operatorSignature ';'
+    | variableDeclaration ';'
+     ;
   }
 
 }
