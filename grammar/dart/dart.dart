@@ -6,3 +6,7 @@
 
 #source('dart_grammar.dart');
 #source('dart_parser.dart');
+
+void main() {
+  new DartParser();
+}

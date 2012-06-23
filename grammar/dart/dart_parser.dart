@@ -7,7 +7,6 @@ class DartParser extends DartGrammar {
 
   void initialize() {
     super.initialize();
-
   }
 
 }
