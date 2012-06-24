@@ -131,33 +131,24 @@ class DartGrammar extends CompositeParser {
       .seq(ref('STRING').optional())
       .seq(tok(';')));
 
-    /*
-// ref('A') method, operator, or constructor (which all should be followed by
-// a block of code).
-def('methodDeclaration', factoryConstructorDeclaration
-   .or(ref('STATIC') functionDeclaration
-   .or(specialSignatureDefinition
-   .or(functionDeclaration initializers.optional()
-   .or(namedConstructorDeclaration initializers.optional()
-    ;
-
-// An abstract method/operator, a field, or const constructor (which
-// all should be followed by a semicolon).
-def('declaration', constantConstructorDeclaration (redirection.or(initializers).optional()
-   .or(functionDeclaration redirection
-   .or(namedConstructorDeclaration redirection
-   .or(ref('ABSTRACT') specialSignatureDefinition
-   .or(ref('ABSTRACT') functionDeclaration
-   .or(ref('STATIC') ref('FINAL') type.optional() staticFinalDeclarationList
-   .or(ref('STATIC').optional() constInitializedVariableDeclaration
-    ;
-
-def('initializers', ':' superCallOrFieldInitializer (',' superCallOrFieldInitializer).star()
-    ;
-
-def('redirection', ':' ref('THIS') ('.' identifier).optional() arguments
-    ;
-
+    def('methodDeclaration', ref('factoryConstructorDeclaration')
+      .or(ref('STATIC').seq(ref('functionDeclaration')))
+      .or(ref('specialSignatureDefinition'))
+      .or(ref('functionDeclaration').seq(ref('initializers').optional()))
+      .or(ref('namedConstructorDeclaration').seq(ref('initializers').optional())));
+    def('declaration', ref('constantConstructorDeclaration').seq(ref('redirection').or(ref('initializers').optional()))
+      .or(ref('functionDeclaration').seq(ref('redirection')))
+      .or(ref('namedConstructorDeclaration').seq(ref('redirection')))
+      .or(ref('ABSTRACT').seq(ref('specialSignatureDefinition')))
+      .or(ref('ABSTRACT').seq(ref('functionDeclaration')))
+      .or(ref('STATIC').seq(ref('FINAL')).seq(ref('type').optional()).seq(ref('staticFinalDeclarationList')))
+      .or(ref('STATIC').optional().seq(ref('constInitializedVariableDeclaration'))));
+    def('initializers', tok(':').seq(ref('superCallOrFieldInitializer').separatedBy(tok(','))));
+    def('redirection', tok(':')
+      .seq(ref('THIS'))
+      .seq(tok('.').seq(ref('identifier')).optional())
+      .seq(ref('arguments')));
+/*
 fieldInitializer
 @init { bool old = this._setParseFunctionExpressions(false); }
     : (ref('THIS') '.').optional() identifier '=' conditionalExpression
@@ -422,7 +413,7 @@ def('typeList', type (',' type).star()
       .seq(ref('forLoopParts')
         .or(ref('forLoopIn')))
       .seq(tok(')'))
-      .seq(ref('statement'))));
+      .seq(ref('statement')));
     def('forLoopParts', ref('forInitializerStatement')
       .seq(ref('expression').optional())
       .seq(tok(';'))
